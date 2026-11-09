@@ -1,12 +1,16 @@
 using UnityEngine;
 using TMPro;
-using UnityEditor;
-using System.Runtime.CompilerServices;
 using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
+
+    [Header("Scene Setup")]
+    [SerializeField] private bool isMainMenuScene = false;
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private string gameSceneName = "GameScene";
+
 
     [Header("Canisters")]
     [SerializeField] private int totalCanisters = 5;
@@ -18,6 +22,15 @@ public class GameManager : MonoBehaviour
     [SerializeField] private GameObject startScreen;
     [SerializeField] private GameObject loseScreen;
 
+    [Header("High Score")]
+    [SerializeField] private TMP_Text gameHighScoreText;
+    [SerializeField] private TMP_Text menuHighScoreText;
+    [SerializeField] private GameObject highScorePanel;
+
+    private const string BestTimeKey = "BestTime";
+
+    private float elapsedTime = 0f;
+
     private bool gameOver = false;
 
     private void Awake()
@@ -27,14 +40,57 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        startScreen.SetActive(true);
+        Time.timeScale = 1f;
 
-        winScreen.SetActive(false);
-        loseScreen.SetActive(false);
+        UpdateHighScoreUI();
 
-        Time.timeScale = 0f; 
+        if (isMainMenuScene )
+        {
+            return;
+        }
+
+        if (winScreen != null ) winScreen.SetActive(false);
+        if (loseScreen != null ) loseScreen.SetActive(false);
 
         UpdateCanisterUI();
+    }
+
+    private void Update()
+    {
+        if (isMainMenuScene || gameOver)
+        {
+            return ;
+        }
+
+        elapsedTime += Time.deltaTime; 
+    }
+
+
+    public void PlayGame()
+    {
+        Time.timeScale = 1f; 
+        SceneManager.LoadScene(gameSceneName);
+    }
+
+    public void LoadMainMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(mainMenuSceneName);
+    }
+
+    public void QuiGame()
+    {
+        Debug.Log("Quit Game");
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+
+
+#else
+        Application.Quit();
+#endif
+
+
     }
 
     public void CanisterCollected()
@@ -51,6 +107,8 @@ public class GameManager : MonoBehaviour
             WinGame();
         }
     }
+
+
 
     private void UpdateCanisterUI()
     {
@@ -70,7 +128,9 @@ public class GameManager : MonoBehaviour
     {
         gameOver = true;
 
-        Debug.Log("You Win!"); 
+        Debug.Log("You Win!");
+
+        SaveHighScoreIfBest(); 
 
         winScreen.SetActive(true);
 
@@ -96,5 +156,58 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1f;
 
         SceneManager.LoadScene( SceneManager.GetActiveScene().buildIndex );
+    }
+
+    public void BackToMainMenu()
+    {
+        SceneManager.LoadScene ( "MainMenu" );
+    }
+
+    public void ShowHighScorePanel()
+    {
+        if (highScorePanel != null) highScorePanel.SetActive(true);
+    }
+
+    public void HideHighScorePanel()
+    {
+        if (highScorePanel != null) highScorePanel.SetActive(false);
+    }
+
+    public void ResetHighScore()
+    {
+        PlayerPrefs.DeleteKey(BestTimeKey);
+        PlayerPrefs.Save();
+        UpdateCanisterUI();
+    }
+
+    private void SaveHighScoreIfBest()
+    {
+        bool hasRecord = PlayerPrefs.HasKey(BestTimeKey);
+
+        if(!hasRecord || elapsedTime < PlayerPrefs.GetFloat(BestTimeKey))
+        {
+            PlayerPrefs.SetFloat(BestTimeKey, elapsedTime);
+            PlayerPrefs.Save();
+            Debug.Log("New best time: " + FormatTime(elapsedTime));
+        }
+
+        UpdateCanisterUI();
+    }
+
+    private void UpdateHighScoreUI()
+    {
+        string text = PlayerPrefs.HasKey(BestTimeKey)
+            ? "Best Time: " + FormatTime(PlayerPrefs.GetFloat(BestTimeKey))
+            : "Best Time: --:--"; 
+
+        if (gameHighScoreText != null) gameHighScoreText.text = text;
+        if (menuHighScoreText != null) menuHighScoreText.text = text;
+    }
+
+    private string FormatTime(float time)
+    {
+        int minutes = Mathf.FloorToInt(time / 60);
+        float seconds = time % 60f;
+        return minutes.ToString("00") + ":" + seconds.ToString("00.00"); 
     }
 }
