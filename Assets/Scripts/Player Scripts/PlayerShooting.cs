@@ -17,6 +17,7 @@ public class PlayerShooting : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             Shoot();
+            AudioManager.Instance.PlayOneShot("Shooting");
         }
     }
 

@@ -1,6 +1,7 @@
 using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
+using System.Runtime.CompilerServices;
 
 public class GameManager : MonoBehaviour
 {
@@ -27,11 +28,23 @@ public class GameManager : MonoBehaviour
     [SerializeField] private TMP_Text menuHighScoreText;
     [SerializeField] private GameObject highScorePanel;
 
+    [Header("Speed Boost")]
+    [SerializeField] private float speedBoostDuration = 3f;
+    [SerializeField] private float speedBoostMultiplier = 1.5f;
+    [SerializeField] private GameObject speedBoostIndicator;
+    [SerializeField] private TMP_Text speedBoostText; 
+
     private const string BestTimeKey = "BestTime";
 
     private float elapsedTime = 0f;
 
+    private float speedBoostTimeLeft = 0f; 
+
     private bool gameOver = false;
+
+    public float SpeedMultiplier => speedBoostTimeLeft > 0f ? speedBoostMultiplier : 1f;
+
+    public bool SpeedBoostActive => speedBoostTimeLeft > 0f;
 
     private void Awake()
     {
@@ -53,6 +66,8 @@ public class GameManager : MonoBehaviour
         if (loseScreen != null ) loseScreen.SetActive(false);
 
         UpdateCanisterUI();
+
+        AudioManager.Instance.Play("GameMusic");
     }
 
     private void Update()
@@ -62,7 +77,9 @@ public class GameManager : MonoBehaviour
             return ;
         }
 
-        elapsedTime += Time.deltaTime; 
+        elapsedTime += Time.deltaTime;
+
+        UpdateSpeedBoost(); 
     }
 
 
@@ -130,7 +147,11 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("You Win!");
 
-        SaveHighScoreIfBest(); 
+        SaveHighScoreIfBest();
+
+        AudioManager.Instance.Stop("Shooting");
+
+        AudioManager.Instance.Stop("GameMusic");
 
         winScreen.SetActive(true);
 
@@ -209,5 +230,41 @@ public class GameManager : MonoBehaviour
         int minutes = Mathf.FloorToInt(time / 60);
         float seconds = time % 60f;
         return minutes.ToString("00") + ":" + seconds.ToString("00.00"); 
+    }
+
+    public void ActivateSpeedBoost()
+    {
+        if (gameOver) return;
+
+        speedBoostTimeLeft = speedBoostDuration;
+
+        if (speedBoostIndicator != null)
+        {
+            speedBoostIndicator.SetActive(true);
+        }
+
+       
+    }
+
+    private void UpdateSpeedBoost()
+    {
+        if (speedBoostTimeLeft <= 0f) return; 
+
+        speedBoostTimeLeft -= Time.deltaTime;
+
+        if (speedBoostTimeLeft <= 0f)
+        {
+            EndSpeedBoost();
+            return; 
+        }
+
+        if (speedBoostText != null) speedBoostText.text = "Speed Boost: " + speedBoostTimeLeft.ToString("0.0") + "s";
+    }
+
+    private void EndSpeedBoost()
+    {
+        speedBoostTimeLeft = 0f;
+
+        if (speedBoostIndicator != null) speedBoostIndicator.SetActive(false);
     }
 }

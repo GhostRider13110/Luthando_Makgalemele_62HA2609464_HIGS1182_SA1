@@ -10,6 +10,8 @@ public class Canister : MonoBehaviour
 
             GameManager.Instance.CanisterCollected();
 
+            AudioManager.Instance.PlayOneShot("Canister");
+
             Destroy(gameObject);
         }
     }

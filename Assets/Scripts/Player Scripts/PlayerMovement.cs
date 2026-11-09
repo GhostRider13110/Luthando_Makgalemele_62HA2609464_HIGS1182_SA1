@@ -10,9 +10,9 @@ public class PlayerMovement : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        Vector3 movement = new Vector3(moveInput.x, 0f, moveInput.y); 
-
-        transform.Translate(movement * movespeed * Time.deltaTime);
+       Vector3 movement = new Vector3(moveInput.x,0f, moveInput.y);
+        float speedMultiplier = GameManager.Instance != null ? GameManager.Instance.SpeedMultiplier : 1f;
+        transform.Translate(movement* movespeed * speedMultiplier * Time.deltaTime);
     }
 
     public void OnMove(InputValue value)
